@@ -1,0 +1,42 @@
+---
+layout: post
+title:  "How I didn't write a unit test"
+date:   2022-08-15 22:30:00 -0600
+categories: misc testing deploy failure
+---
+
+In school, one thing I never really experienced is software failures. If there were glaring issues you didn't catch, you got a `-N` points on your mark and you never really had to deal with the issue. However, now that I'm working I've had to experience the fallout of bad code. Nothing as jarring to a new developer like myself as coming in to work the next day and hearing you broke something for 30+ important customers 😓.
+
+The actual issue was pretty small and simple: 
+
+```
+function findItem(array, id){
+    return array.find(item => item.id = id).name || DEFAULT_ITEM;
+}
+```
+{: .language-javascript}
+
+This little snippet prevented a core page in the app from rendering. The array in question contained configuration info for a series of supported integrations, and given the account had an unsupported integration value we would default to `DEFAULT_ITEM`. The original check was: 
+```
+function findItem(array, id){
+    return array.find(item => item.id = id) || DEFAULT_ITEM;
+}
+```
+{: .language-javascript}
+For those unfamiliar with [Javascript's `Array.find()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find): 
+
+> The find() method returns the first element in the provided array that satisfies the provided testing function. If no values satisfy the testing function, undefined is returned.
+
+My initial thinking was: if `find()` returns undefined, it means we didn't find something to match, we "short circuit" and evaluate the right hand side of the expression, which will return the `DEFAULT_ITEM`. However, I later realized the component which would call this function would need the `.name` value of the config object. I added that evaluation in without checking that my logic was still valid: in my head I assumed that my `||` would still catch any unsupported values. I didn't stop to asses that my previous logic was still valid, and I didn't write a test that enforced that logic in code. Lo and behold when `find()` doesn't pass the test, we try to access `undefined.name`, and the component doesn't render.
+
+And, it ended up shipping.
+
+Really this is a silly mistake that could have been caught by me writing that unit test, or caught in PR, or with more testing on our Sandbox. Before writing the initial function I should have written a test that might have caught this mistake, but I didn't! To be fair, the people who reviewed this could have also noticed this, but the issue only came up with unsupported integrations and the accounts I set up for testing all used supported integrations.
+
+My takeaways: 
+- I probably should have written a unit test for this function. I neglect writing front end tests because setting up mocking in jest is really painful for React. I have to get over the hump of it being frustrating to do and either just do it or find a way to make it easier!
+- I should bake the assumptions about my code into a unit test. That way, once situations change I have tests to rely on to check that my logic is still valid.
+- I should have considered the case where someone doesn't have a supported integration. More generally, I find I rush when it comes to the UAT stage. I should take the time to consider edge cases and failure points. 
+- Something I want to leverage and learn more about in general is End to End tests. While something as small as this could have been caught by unit tests or a UAT step, having a worst case fallback of a good end to end test would easy my mind. (Maybe its time I actually look into Cypress...)
+
+So, a small mistake but I finally learned something that I've probably read and heard hundreds of times: WRITE TESTS! 
