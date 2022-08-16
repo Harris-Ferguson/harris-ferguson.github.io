@@ -4,15 +4,10 @@ title: About
 permalink: /about/
 ---
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
+I'm Harris Ferguson. I'm a Computer Science student at the University of Saskatchewan, and am currently a
+a software developer intern at [7shifts](https://www.7shifts.com/)
+where I work with TypeScript, React, PHP, Laravel, MySQL, and GraphQL. 
 
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
-
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
+Check out [my Github](https://github.com/Harris-Ferguson) and [my portfolio!](https://harrisferguson.dev/)
 
 
-[jekyll-organization]: https://github.com/jekyll
