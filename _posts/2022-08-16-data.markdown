@@ -1,0 +1,56 @@
+---
+layout: post
+title:  "Why do the rules of hooks even exist?"
+date:   2022-08-16 15:30:00 -0600
+categories: React Hooks Frontend
+---
+
+I ran into a sticky hooks situation recently that I was banging my head against for a bit. I had the following situation.
+
+{% highlight javascript %}
+const { data, loading } = useGetData();
+const userId = data.id;
+const { relatedData } = useGetRelatedDataForUser(userId);
+{% endhighlight %}
+
+Often it's useful to write a custom react hook that interacts with any external data sources. However, in this particular situation I needed to use some data from one API endpoint to fetch data from a second endpoint. The problem comes with the `loading` variable that indicates if our API request is still in progress. `data` is going to be `undefined` as long as we aren't loading, which means in order to use our second hook we need to wait. Okay, easy enough right? 
+
+{% highlight javascript %}
+const { data, loading } = useGetData();
+if (!loading){
+    const userId = data.id;
+    const { relatedData } = useGetRelatedDataForUser(userId);
+}
+{% endhighlight %}
+
+Unfortunately if you try to run this, you might see something like the following in the console:
+
+`🚨🚨 THIS BREAKS THE RULES OF HOOKS 🚨🚨 READ THE RULES OF HOOKS 🚨🚨`
+
+Having seen this error and other related errors in my console before, I thought I would actually learn why the rules exist, and lucky for me our facebook overlords figured people might wonder [why the rules exist](https://reactjs.org/docs/hooks-rules.html#explanation). This, plus [some](https://dev.to/wuz/linked-lists-in-the-wild-react-hooks-3ep8) [other](https://reactjs.org/docs/hooks-faq.html#how-does-react-associate-hook-calls-with-components) [amazing](https://overreacted.io/how-does-setstate-know-what-to-do/) resources.
+
+The basic problem is this: there is only 1 of each hook function. For example, 
+{% highlight React %}
+const ClickCount = () => {
+    const [rightCount, setRightCount] = useState(0);
+    const [leftCount, setLeftCount] = useState(0);
+    return (
+        <>
+            <div>{`Right: ${rightCount} Left: ${leftCount}`}</div>
+            <Button onClick={()=>{setRightCount(rightCount+1)}} />
+            <Button onClick={()=>{setLeftCount(leftCount+1)}} />
+        </>
+    );
+}
+{% endhighlight %}
+So, React needs to keep track of which state values corresponds to which `useState` call. React does this by keeping a [linked list of hooks](https://github.com/facebook/react/blob/5f06576f51ece88d846d01abd2ddd575827c6127/packages/react-reconciler/src/ReactFiberHooks.js#L85), and relying on the hooks always being called in the same order. In fact, component state itself is kept as a linked list. When hooks are called, we append a state to the linked list of hook states, and then move to the next spot in the linked list. This explains why we can't have hooks in conditionals: if we allowed hooks in conditionals, we could be at the wrong state node for the state we are calling! 
+
+What about the other rule: we can't have hooks outside react function components. Well this is easy to explain with what we know now. Hooks need to be associated with the state of some component in order to work. If we call them outside of a react component, the react engine won't be able to make this association since it really isn't associated with any react component. 
+
+Hopefully thats not too hard to follow. I know I had a tough time grappling with all the resources I used. 
+
+So, how did I fix my initial problem? I wish I had a nice answer, but it came down to using `useEffect` with a whole lot of null checks sadly. The solution was not nearly as interesting as my investigation into Hooks. 
+
+
+
+
