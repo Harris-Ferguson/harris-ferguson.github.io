@@ -27,9 +27,9 @@ Unfortunately if you try to run this, you might see something like the following
 
 `🚨🚨 THIS BREAKS THE RULES OF HOOKS 🚨🚨 READ THE RULES OF HOOKS 🚨🚨`
 
-Having seen this error and other related errors in my console before, I thought I would actually learn why the rules exist, and lucky for me our facebook overlords figured people might wonder [why the rules exist](https://reactjs.org/docs/hooks-rules.html#explanation). This, plus [some](https://dev.to/wuz/linked-lists-in-the-wild-react-hooks-3ep8) [other](https://reactjs.org/docs/hooks-faq.html#how-does-react-associate-hook-calls-with-components) [amazing](https://overreacted.io/how-does-setstate-know-what-to-do/) resources.
+Having seen this error and other related errors in my console before, I thought I would actually learn why the rules exist, and lucky for me our facebook overlords figured people might wonder [why the rules exist](https://reactjs.org/docs/hooks-rules.html#explanation). Here are [some](https://dev.to/wuz/linked-lists-in-the-wild-react-hooks-3ep8) [other](https://reactjs.org/docs/hooks-faq.html#how-does-react-associate-hook-calls-with-components) [amazing](https://overreacted.io/how-does-setstate-know-what-to-do/) resources I used while figuring this out.
 
-The basic problem is this: there is only 1 of each hook function. For example, 
+The basic problem is this: how do we distinguish calls to the same hook that are controlling a different state value? For example:
 {% highlight React %}
 const ClickCount = () => {
     const [rightCount, setRightCount] = useState(0);
@@ -43,7 +43,9 @@ const ClickCount = () => {
     );
 }
 {% endhighlight %}
-So, React needs to keep track of which state values corresponds to which `useState` call. React does this by keeping a [linked list of hooks](https://github.com/facebook/react/blob/5f06576f51ece88d846d01abd2ddd575827c6127/packages/react-reconciler/src/ReactFiberHooks.js#L85), and relying on the hooks always being called in the same order. In fact, component state itself is kept as a linked list. When hooks are called, we append a state to the linked list of hook states, and then move to the next spot in the linked list. This explains why we can't have hooks in conditionals: if we allowed hooks in conditionals, we could be at the wrong state node for the state we are calling! 
+React needs to keep track of which state values corresponds to which `useState` call. If I try to access one of `leftCount` and `rightCount`, React needs to access the correct state value.
+
+React does this by keeping a [linked list of hooks](https://github.com/facebook/react/blob/5f06576f51ece88d846d01abd2ddd575827c6127/packages/react-reconciler/src/ReactFiberHooks.js#L85), and relying on the hooks always being called in the same order. In fact, component state itself is kept as a linked list. When hooks are called, we append a state to the linked list of hook states, and then move to the next spot in the linked list. This explains why we can't have hooks in conditionals: if we allowed hooks in conditionals, we could be at the wrong state node for the state we are calling! 
 
 What about the other rule: we can't have hooks outside react function components. Well this is easy to explain with what we know now. Hooks need to be associated with the state of some component in order to work. If we call them outside of a react component, the react engine won't be able to make this association since it really isn't associated with any react component. 
 
