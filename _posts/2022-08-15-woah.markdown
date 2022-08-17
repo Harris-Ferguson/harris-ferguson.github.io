@@ -27,7 +27,7 @@ For those unfamiliar with [Javascript's `Array.find()`](https://developer.mozill
 
 > The find() method returns the first element in the provided array that satisfies the provided testing function. If no values satisfy the testing function, undefined is returned.
 
-My initial thinking was: if `find()` returns undefined, it means we didn't find something to match, we "short circuit" and evaluate the right hand side of the expression, which will return the `DEFAULT_ITEM`. However, I later realized the component which would call this function would need the `.name` value of the config object. I added that evaluation in without checking that my logic was still valid: in my head I assumed that my `||` would still catch any unsupported values. I didn't stop to asses that my previous logic was still valid, and I didn't write a test that enforced that logic in code. Lo and behold when `find()` doesn't pass the test, we try to access `undefined.name`, and the component doesn't render.
+My initial thinking was: if `find()` returns undefined, it means we didn't find something to match, we "short circuit" and evaluate the right hand side of the expression, which will return the `DEFAULT_ITEM`. However, I later realized the component which would call this function would need the `.name` value of the config object. I added that evaluation in without checking that my logic was still valid: in my head I assumed that my `||` would still catch any unsupported values. I didn't stop to asses that my previous logic was still valid, and I didn't write a test that enforced that logic in code. Lo and behold when `find()` doesn't pass the predicate function and we try to access `undefined.name` the component doesn't render 💀.
 
 And, it ended up shipping.
 
