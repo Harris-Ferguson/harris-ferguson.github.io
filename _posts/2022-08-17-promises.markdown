@@ -1,0 +1,102 @@
+---
+layout: post
+title:  "My Promises Crash Course"
+date:   2022-08-17 9:00:00 -0600
+categories: Typescript Promises Frontend
+---
+
+I've been doing a lot of front end work lately! It's been a fun experience, especially since the typical front end technologies aren't something I was exposed 
+to in a major way during school. Today I needed to write a function that required me to actually learn how Javascript Promises work, as well as how to 
+aggregate Promises into a single Promise. So, heres a summary of the crash course I had to take.
+
+# Whats a promise? 
+
+From the [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise): 
+
+> The `Promise` object represents the eventual completion (or failure) of an asynchronous operation and its resulting value.
+
+This comes up if you want to query an external API: retrieving data over the network is asynchronous. [Javascript's Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)
+uses Promises to provide the data from requests once it becomes available. Not only that, but the `async/await` pattern that was [introduced in ES2017](https://tc39.es/ecma262/multipage/ecmascript-language-functions-and-classes.html#sec-async-function-definitions) 
+makes use of Promises under the hood. Use that syntax to avoid [👹callback hell👹](http://callbackhell.com/). 
+
+A promise is really just any object or function that implements a `.then()` method. That `.then()` method needs to accept two arguments: `onFulfilled` and `onRejected`. 
+So, our mental model so far is: 
+
+{% highlight javascript %}
+const Promise = {
+      then: (onFulfilled, onRejected) => {
+        // 
+      }  
+}
+{% endhighlight %}
+
+_If you're unfamiliar with Javascript or this syntax,_ [_here is a good resource_](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#arrow_functions_used_as_methods)
+
+`onFulfilled` and `onRejected` need to behave in [specific ways](https://promisesaplus.com/#the-then-method). `onFulfilled` needs satisfy: 
+1. is called when the Promise is Fulfilled
+2. is called exactly once
+3. is NOT called if the Promise is not Fulfilled 
+
+`onRejected` is the same, except we call it when the Promise is rejected. These functions are provided by whoever is creating the promise. This means we can supply the 
+success / error behavior the promise should have in the form of callbacks. `then()` has access to the current state of the promise, which means a promise has to keep some 
+internal state with transitions. [This diagram](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#description) shows what state machine
+this object has to implement. So, `then()` looks something like: 
+
+{% highlight javascript %}
+const Promise = {
+      then: (onFulfilled, onRejected) => {
+        if(Promise.is_fulfilled() && Promise.didNotCallOnFulfilled()) {
+            onFulfilled(Promise.result)
+        }
+      }  
+}
+{% endhighlight %}
+
+We could go down a rabbit hole of expanding this mental model, but [here's a great article](https://www.promisejs.org/implementing/) walking through what a Promise implementation would look like.
+We have enough now to see how we could aggregate promises.
+
+# Aggregating promises
+Here's the situation I was in. I was writing a function that was restricted to returning something with a type of `Promise<DataType[]>`. However, the only way I could
+get access to any elements of `DataType` was a function that returned `Promise<DataType>`. In code: 
+{% highlight typescript %}
+async function getDataItem(dataId): Promise<DataType> {
+    // A working implementation
+}
+
+async function getDataArray(dataIds): Promise<DataType[]> {
+    // how do I convert return values from the above function into what I need? 
+}
+{% endhighlight %}
+
+Luckily, the Promises API has a function that can perform this aggregation: [`Promise.all()`.](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all)
+Given an iterable of Promises as input, we get back a single promise that will resolve to the array of results. So, we can call our first function to get individual data items from our API,
+then package all of those promises into a single promise. The great part is that performance wise this isn't even that bad: as soon as we call our first function, thats it! It spits back a 
+promise that will eventually resolve, and each of those requests aren't blocking each other. We are doing them in parallel! That looks something like this: 
+
+{% highlight typescript %}
+async function getDataItem(dataId): Promise<DataType> {
+    // A working implementation
+}
+
+async function getDataArray(dataIds): Promise<DataType[]> {
+    const promises: Promise<DataType>[] = [];
+    dataIds.forEach((id) => {
+        promises.push(getDataItem(id));
+    });
+    const aggregatePromise = Promise.all(promises);
+    return aggregatePromise;
+}
+{% endhighlight %}
+
+Pretty neat! The aggregate promise will reject if any of the individual requests reject, and will resolve when every one of the promises have been fulfilled. The promise API
+also has some other functions such as [`.any()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/any) returning the first promise that resolves, [`race()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race) which resolves when any of the provided promises resolve, and
+[`allSettled()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled) which returns a promise that resolves to an array containing the promises result (reject or resolve).  
+
+Extra fun fact, `Promises` aren't supported on internet explorer! ☠️ RIP ☠️.  
+
+
+
+
+
+
+
