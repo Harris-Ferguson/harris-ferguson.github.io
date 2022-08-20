@@ -3,6 +3,7 @@ layout: post
 title:  "How many bytes can you fit an object into?"
 date:   2022-08-18 9:00:00 -0600
 categories: Backend Messages Marshalling Data MessagePack
+permalink: '/aug-18/data-serialization'
 ---
 
 A running program handles data by keeping it in memory. Some languages may abstract this away from you, but at some point down the stack your program is
